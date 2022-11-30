@@ -26,7 +26,7 @@ public class HopperListener implements Listener {
             p = patternCache.get(filterString);
         }else {
             try {
-                String regexString = wildcardToRegex(filterString);
+                String regexString = filterStringToRegex(filterString);
                 p = Pattern.compile(regexString);
                 patternCache.put(filterString, p);
             }catch(PatternSyntaxException e){
@@ -35,6 +35,19 @@ public class HopperListener implements Listener {
         }
         Matcher m = p.matcher(fullItemName);
         return m.find();
+    }
+
+    String filterStringToRegex(String filterString){
+        String[] sections = filterString.split(",");
+        StringBuilder sb = new StringBuilder();
+        for(String section : sections){
+            sb.append(wildcardToRegex(section));
+            //Append bar only if not last section
+            if(!section.equals(sections[sections.length - 1])){
+                sb.append("|");
+            }
+        }
+        return sb.toString();
     }
 
     String wildcardToRegex(String query){
