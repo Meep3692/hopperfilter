@@ -1,0 +1,4 @@
+name: HopperFilter
+version: '${project.version}'
+main: ca.awoo.hopperfilter.HopperFilter
+api-version: 1.19
