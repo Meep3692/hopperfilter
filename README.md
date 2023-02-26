@@ -1,6 +1,6 @@
-# hopperfilter
-Spigot plugin to allow hoppers to filter items given filter names.
-https://www.spigotmc.org/resources/hopper-filters.106508/
+# Hopper Filters
+Spigot plugin to allow hoppers to filter items given filter names.  
+[Hopper Filters | SpigotMC](https://www.spigotmc.org/resources/hopper-filters.106508/)
 
 ## Description from spigotmc.org post
 This plugin allows players to set filters on hoppers by naming them in
