@@ -1,5 +1,6 @@
 package ca.awoo.hopperfilter;
 
+import org.bukkit.Material;
 import org.bukkit.block.Container;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -8,46 +9,47 @@ import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 
 import java.util.HashMap;
-import java.util.regex.Matcher;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
 public class HopperListener implements Listener {
 
-    HashMap<String, Pattern> patternCache;
+    HashMap<String, Filter> filterCache;
 
     public HopperListener(){
-        patternCache = new HashMap<>();
+        filterCache = new HashMap<>();
     }
 
-    boolean filterMatch(String filterString, String fullItemName){
-        Pattern p;
-        if(patternCache.containsKey(filterString)){
-            p = patternCache.get(filterString);
-        }else {
-            try {
-                String regexString = filterStringToRegex(filterString);
-                p = Pattern.compile(regexString);
-                patternCache.put(filterString, p);
-            }catch(PatternSyntaxException e){
-                return false;
-            }
+    boolean filterMatch(String filterString, Material item){
+        Filter filter = filterCache.get(filterString);
+        if(filter == null){
+            filter = filterStringToFilter(filterString);
+            filterCache.put(filterString, filter);
         }
-        Matcher m = p.matcher(fullItemName);
-        return m.find();
+        return filter.matches(item);
     }
 
-    String filterStringToRegex(String filterString){
+    Filter filterStringToFilter(String filterString){
         String[] sections = filterString.split(",");
-        StringBuilder sb = new StringBuilder();
+        Set<Filter> positiveFilters = new HashSet<>();
+        Set<Filter> negativeFilters = new HashSet<>();
         for(String section : sections){
-            sb.append(wildcardToRegex(section));
-            //Append bar only if not last section
-            if(!section.equals(sections[sections.length - 1])){
-                sb.append("|");
+            if(section.startsWith("!")){
+                negativeFilters.add(parseFilter(section.substring(1)));
+            }else{
+                positiveFilters.add(parseFilter(section));
             }
         }
-        return sb.toString();
+        return new CompoundFilter(positiveFilters, negativeFilters);
+    }
+
+    Filter parseFilter(String filterString){
+        if(filterString.startsWith("#")){
+            return new TagFilter(Pattern.compile(wildcardToRegex(filterString.substring(1))));
+        }else{
+            return new IdFilter(Pattern.compile(wildcardToRegex(filterString)));
+        }
     }
 
     String wildcardToRegex(String query){
@@ -76,8 +78,8 @@ public class HopperListener implements Listener {
         if(event.getDestination().getType().equals(InventoryType.HOPPER) && event.getDestination().getHolder() instanceof Container){
             String customName = ((Container) event.getDestination().getHolder()).getCustomName();
             if(customName != null){
-                String itemName = event.getItem().getType().getKey().getKey();
-                if(!filterMatch(customName, itemName)){
+                Material material = event.getItem().getType();
+                if(!filterMatch(customName, material)){
                     event.setCancelled(true);
                 }
             }
@@ -89,8 +91,8 @@ public class HopperListener implements Listener {
         if(event.getInventory().getHolder() instanceof Container){
             String customName = ((Container)event.getInventory().getHolder()).getCustomName();
             if(customName != null){
-                String itemName = event.getItem().getItemStack().getType().getKey().getKey();
-                if(!filterMatch(customName, itemName)){
+                Material material = event.getItem().getItemStack().getType();
+                if(!filterMatch(customName, material)){
                     event.setCancelled(true);
                 }
             }
